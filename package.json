@@ -1,0 +1,54 @@
+{
+  "name": "magpie-prompt-match",
+  "version": "0.1.0",
+  "description": "Magpie plugin that dynamically loads, filters, and injects model-specific AGENTS.md prompts across routing groups, fallbacks, and protocols.",
+  "type": "module",
+  "bin": {
+    "prompt-match": "./bin/prompt-match.ts"
+  },
+  "files": [
+    "ARCHITECTURE.md",
+    "README.md",
+    "bin/",
+    "dist/",
+    "src/",
+    "ui/"
+  ],
+  "scripts": {
+    "build": "bun run scripts/build-middleware.ts",
+    "test": "bun test",
+    "typecheck": "bun x tsc --noEmit"
+  },
+  "keywords": [
+    "magpie",
+    "magpie-plugin",
+    "agents-md",
+    "prompt-match",
+    "middleware",
+    "hooks"
+  ],
+  "license": "MIT",
+  "engines": {
+    "bun": ">=1.0.0"
+  },
+  "magpie": {
+    "name": "Prompt Match",
+    "summary": {
+      "en": "Dynamically load and filter model-specific AGENTS.md prompts per resolved model, supporting routing groups, fallbacks, and a built-in rule manager UI.",
+      "zh": "按最终命中的模型动态加载与裁剪 AGENTS.md 提示词，支持路由组、Fallback 精准匹配及内置可视化规则管理页。"
+    },
+    "hooks": "./src/hooks.ts",
+    "middleware": "./dist/middleware.js",
+    "page": {
+      "file": "ui/bootstrap.html",
+      "title": "Prompt Match",
+      "titles": {
+        "zh": "模型提示词匹配 (Prompt Match)"
+      },
+      "service": {
+        "port": 47831,
+        "option": "uiPort"
+      }
+    }
+  }
+}

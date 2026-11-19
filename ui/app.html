@@ -1,0 +1,997 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Prompt Match — Magpie</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: var(--magpie-bg, #0f1117);
+      --surface: var(--magpie-card, #171a23);
+      --surface-2: #1f2430;
+      --border: var(--magpie-line, #2c3344);
+      --fg: var(--magpie-fg, #e6e9f2);
+      --muted: var(--magpie-muted, #939bb0);
+      --accent: var(--magpie-accent, #5b8cff);
+      --accent-hover: #4678f0;
+      --ok: var(--magpie-success, #34c77b);
+      --warn: #e6a23c;
+      --danger: var(--magpie-danger, #e85d68);
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      --sans: var(--magpie-font, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif);
+    }
+    body.light {
+      color-scheme: light;
+      --bg: var(--magpie-bg, #f6f7fb);
+      --surface: var(--magpie-card, #ffffff);
+      --surface-2: #eef1f7;
+      --border: var(--magpie-line, #d8deea);
+      --fg: var(--magpie-fg, #1b2230);
+      --muted: var(--magpie-muted, #616d84);
+      --accent: var(--magpie-accent, #3164e8);
+      --accent-hover: #2452cc;
+      --ok: var(--magpie-success, #1b9a59);
+      --warn: #c47d17;
+      --danger: var(--magpie-danger, #d13e4a);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font: 14px/1.5 var(--sans);
+      background: var(--bg);
+      color: var(--fg);
+    }
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 20px;
+      border-bottom: 1px solid var(--border);
+      background: var(--surface);
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .brand { display: flex; align-items: center; gap: 10px; }
+    .brand h1 { margin: 0; font-size: 16px; font-weight: 600; }
+    .pill {
+      font-size: 12px;
+      padding: 2px 8px;
+      border-radius: 999px;
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      color: var(--muted);
+    }
+    .pill.ok { color: var(--ok); border-color: color-mix(in srgb, var(--ok) 40%, var(--border)); }
+    .pill.warn { color: var(--warn); }
+    nav { display: flex; gap: 6px; }
+    .tab-btn {
+      border: 1px solid transparent;
+      background: transparent;
+      color: var(--muted);
+      padding: 6px 12px;
+      border-radius: 8px;
+      cursor: pointer;
+      font: inherit;
+    }
+    .tab-btn.active {
+      background: var(--surface-2);
+      border-color: var(--border);
+      color: var(--fg);
+      font-weight: 600;
+    }
+    main { max-width: 1180px; margin: 0 auto; padding: 18px 20px 40px; }
+    .panel { display: none; }
+    .panel.active { display: block; }
+    .grid-2 { display: grid; grid-template-columns: 280px 1fr; gap: 16px; }
+    @media (max-width: 820px) { .grid-2 { grid-template-columns: 1fr; } }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 14px;
+    }
+    .card h2, .card h3 { margin: 0 0 10px; font-size: 14px; }
+    .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+    .space-between { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .stack { display: flex; flex-direction: column; gap: 10px; }
+    label { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--muted); }
+    input[type="text"], input[type="number"], select, textarea {
+      width: 100%;
+      padding: 8px 10px;
+      border-radius: 7px;
+      border: 1px solid var(--border);
+      background-color: var(--bg);
+      color: var(--fg);
+      font: inherit;
+    }
+    input::placeholder, textarea::placeholder {
+      color: var(--muted);
+      opacity: 0.85;
+    }
+    input[type="checkbox"] {
+      accent-color: var(--accent);
+      cursor: pointer;
+    }
+    select {
+      appearance: none;
+      -webkit-appearance: none;
+      background-color: var(--surface-2);
+      color: var(--fg);
+      padding-right: 30px;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23939bb0' d='M2.2 4.2L6 8l3.8-3.8z'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 10px center;
+      cursor: pointer;
+    }
+    select option {
+      background-color: var(--surface);
+      color: var(--fg);
+    }
+    input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 1px;
+    }
+    textarea { font-family: var(--mono); font-size: 12.5px; line-height: 1.5; resize: vertical; }
+    button {
+      font: inherit;
+      padding: 7px 12px;
+      border-radius: 7px;
+      border: 1px solid var(--border);
+      background: var(--surface-2);
+      color: var(--fg);
+      cursor: pointer;
+    }
+    button:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+    .error-banner {
+      display: none;
+      margin-bottom: 12px;
+      padding: 10px 14px;
+      border-radius: 8px;
+      border: 1px solid var(--danger);
+      background: color-mix(in srgb, var(--danger) 14%, var(--surface));
+      color: var(--fg);
+      font-size: 13px;
+    }
+    button.primary {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
+    }
+    button.primary:hover { background: var(--accent-hover); }
+    button.danger {
+      color: var(--danger);
+      border-color: color-mix(in srgb, var(--danger) 40%, var(--border));
+    }
+    button.sm { padding: 4px 9px; font-size: 12px; }
+    .file-list { display: flex; flex-direction: column; gap: 4px; margin-top: 8px; }
+    .file-item {
+      text-align: left;
+      padding: 8px 10px;
+      border-radius: 7px;
+      border: 1px solid transparent;
+      background: transparent;
+      color: var(--fg);
+      cursor: pointer;
+    }
+    .file-item:hover { background: var(--surface-2); }
+    .file-item.selected {
+      background: var(--surface-2);
+      border-color: var(--accent);
+    }
+    .file-item .sub { font-size: 11.5px; color: var(--muted); margin-top: 2px; }
+    .code-box {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px;
+      font-family: var(--mono);
+      font-size: 12px;
+      white-space: pre-wrap;
+      word-break: break-word;
+      max-height: 300px;
+      overflow: auto;
+    }
+    table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+    th, td {
+      text-align: left;
+      padding: 8px;
+      border-bottom: 1px solid var(--border);
+      vertical-align: top;
+    }
+    th { color: var(--muted); font-weight: 600; }
+    .toast {
+      position: fixed;
+      right: 18px;
+      bottom: 18px;
+      padding: 9px 14px;
+      border-radius: 8px;
+      background: var(--surface);
+      border: 1px solid var(--accent);
+      color: var(--fg);
+      font-size: 13px;
+      display: none;
+      z-index: 99;
+    }
+    .muted { color: var(--muted); font-size: 12px; }
+    .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; }
+    .model-chip-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      max-height: 170px;
+      overflow-y: auto;
+      padding: 6px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+    }
+    .model-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--fg);
+      font-size: 12px;
+      cursor: pointer;
+    }
+    .model-chip:hover { border-color: var(--accent); }
+    .model-chip.selected {
+      background: color-mix(in srgb, var(--accent) 22%, var(--surface));
+      border-color: var(--accent);
+      color: var(--fg);
+    }
+    .model-chip .prov { color: var(--muted); font-size: 11px; }
+    .model-chip .dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--ok);
+      display: inline-block;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="brand">
+      <h1>Prompt Match</h1>
+      <span id="statusBadge" class="pill ok">Enabled</span>
+      <span id="promptsDirBadge" class="pill">~/.config/magpie/prompts</span>
+    </div>
+    <nav>
+      <button class="tab-btn active" data-tab="rules">规则管理</button>
+      <button class="tab-btn" data-tab="tester">匹配模拟</button>
+      <button class="tab-btn" data-tab="logs">命中日志</button>
+      <button class="tab-btn" data-tab="settings">设置</button>
+    </nav>
+  </header>
+
+  <main>
+    <div id="errorBanner" class="error-banner" role="alert"></div>
+    <!-- RULES TAB -->
+    <section id="tab-rules" class="panel active stack">
+      <div class="card">
+        <div class="space-between">
+          <div>
+            <strong>快捷模板</strong>
+            <span class="muted"> — 一键在全局目录生成开箱即用的模型纠偏规则</span>
+          </div>
+          <div id="templateButtons" class="row"></div>
+        </div>
+      </div>
+
+      <div class="card stack">
+        <div class="space-between">
+          <div>
+            <strong>从本机 Magpie 模型快速设定提示词</strong>
+            <span id="catalogSummary" class="muted"> — 正在读取已配置模型…</span>
+          </div>
+          <div class="row">
+            <label class="row" style="flex-direction:row;align-items:center;color:var(--fg);font-size:12px">
+              <input id="bindProviderPrefix" type="checkbox"> 精确绑定供应商 (provider/model)
+            </label>
+            <button id="refreshModelsBtn" class="sm">刷新模型</button>
+          </div>
+        </div>
+        <div class="row">
+          <select id="modelProviderFilter" style="width:auto;min-width:170px">
+            <option value="">全部供应商</option>
+          </select>
+          <input id="modelSearchInput" type="text" placeholder="搜索模型，如 gpt / claude / gemini / deepseek..." style="flex:1;min-width:200px">
+          <button id="createForSelectedBtn" class="sm primary" disabled>为所选模型新建规则 (0)</button>
+          <button id="appendSelectedBtn" class="sm" disabled>追加到当前规则</button>
+        </div>
+        <div id="modelChipGrid" class="model-chip-grid">
+          <span class="muted">暂无可用模型</span>
+        </div>
+        <div class="muted">提示：可多选多个模型共用同一份提示词；带绿点的模型表示当前已有全局规则命中（悬停可查看命中文件名）。</div>
+      </div>
+
+      <div class="grid-2">
+        <div class="card stack">
+          <div class="space-between">
+            <h2 style="margin:0">全局规则文件</h2>
+            <button id="newRuleBtn" class="sm primary">+ 新建</button>
+          </div>
+          <div id="globalRuleList" class="file-list"></div>
+          <hr style="border:none;border-top:1px solid var(--border);margin:6px 0">
+          <h3 style="margin:0">项目发现预览</h3>
+          <div class="row">
+            <input id="projectCwdInput" type="text" placeholder="输入项目路径 (cwd)">
+            <button id="scanProjectBtn" class="sm">扫描</button>
+          </div>
+          <div id="projectRuleList" class="muted">暂无项目规则</div>
+        </div>
+
+        <div class="card stack">
+          <div class="space-between">
+            <div class="row" style="flex:1;min-width:220px">
+              <input id="editorFileName" type="text" placeholder="例如: gpt-6.2.md">
+            </div>
+            <div class="row">
+              <button id="saveRuleBtn" class="primary">保存 (热生效)</button>
+              <button id="deleteRuleBtn" class="danger">删除</button>
+            </div>
+          </div>
+          <textarea id="editorContent" rows="18" placeholder="---&#10;models: [&quot;gpt-6.2&quot;]&#10;mode: append&#10;position: system-end&#10;---&#10;在此输入模型专属提示词..."></textarea>
+          <div class="muted">支持 YAML Frontmatter：models / agents / mode (append|replace) / position (system-end|system-start|developer-reminder) / priority / includeUtility / enabled</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TESTER TAB -->
+    <section id="tab-tester" class="panel stack">
+      <div class="card stack">
+        <div class="space-between">
+          <h2 style="margin:0">匹配模拟器 (Dry-Run)</h2>
+          <div class="row">
+            <select id="testCatalogSelect" style="width:auto;min-width:220px">
+              <option value="">从 Magpie 模型列表快速填入…</option>
+            </select>
+            <button id="fillSampleBtn" class="sm">填入 AGENTS.md 条件块示例</button>
+            <button id="runTestBtn" class="primary">运行匹配测试</button>
+          </div>
+        </div>
+        <div class="form-grid">
+          <label>Provider ID<input id="testProvider" type="text" value="openai" placeholder="openai / workbuddy"></label>
+          <label>最终模型 (ctx.provider.model)<input id="testModel" type="text" value="gpt-6.2"></label>
+          <label>原始请求模型 (含路由组)<input id="testReqModel" type="text" placeholder="group/coding"></label>
+          <label>Agent<input id="testAgent" type="text" value="pi" placeholder="pi / codex / claude"></label>
+          <label>协议
+            <select id="testProtocol">
+              <option value="anthropic">anthropic</option>
+              <option value="chat">chat (OpenAI)</option>
+              <option value="responses">responses</option>
+              <option value="gemini">gemini</option>
+            </select>
+          </label>
+          <label>项目目录 (cwd)<input id="testCwd" type="text" placeholder="/path/to/repo"></label>
+        </div>
+        <label>
+          可选：模拟 Agent 原生读取进请求的 AGENTS.md 文本（测试条件块剥离与去重）
+          <textarea id="testSample" rows="6" placeholder="<!-- @model: gpt-6.2 -->&#10;...&#10;<!-- @end -->"></textarea>
+        </label>
+      </div>
+
+      <div id="testResultCard" class="card stack" style="display:none">
+        <div class="space-between">
+          <h3 style="margin:0">匹配结果</h3>
+          <div id="testSummaryPills" class="row"></div>
+        </div>
+        <div id="testMatchedList"></div>
+        <div>
+          <div class="muted" style="margin-bottom:4px">注入内容预览 (system-end / system-start / developer-reminder)</div>
+          <div id="testInjectedPreview" class="code-box"></div>
+        </div>
+        <div id="testRewrittenWrap" style="display:none">
+          <div class="muted" style="margin-bottom:4px">条件块裁剪后的原文预览</div>
+          <div id="testRewrittenPreview" class="code-box"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- LOGS TAB -->
+    <section id="tab-logs" class="panel stack">
+      <div class="card stack">
+        <div class="space-between">
+          <h2 style="margin:0">实时命中日志</h2>
+          <div class="row">
+            <button id="refreshLogsBtn" class="sm">刷新</button>
+            <button id="clearLogsBtn" class="sm danger">清空</button>
+          </div>
+        </div>
+        <div style="overflow-x:auto">
+          <table>
+            <thead>
+              <tr>
+                <th>时间</th>
+                <th>Agent</th>
+                <th>请求 → 实际模型</th>
+                <th>状态</th>
+                <th>命中规则</th>
+                <th>注入字节</th>
+              </tr>
+            </thead>
+            <tbody id="logsTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- SETTINGS TAB -->
+    <section id="tab-settings" class="panel stack">
+      <div class="card stack" style="max-width:640px">
+        <h2 style="margin:0">全局设置</h2>
+        <label class="row" style="flex-direction:row;align-items:center;color:var(--fg)">
+          <input id="setEnabled" type="checkbox"> 启用 Prompt Match 插件
+        </label>
+        <label class="row" style="flex-direction:row;align-items:center;color:var(--fg)">
+          <input id="setSkipUtility" type="checkbox"> 自动跳过轻量辅助请求（标题生成 / 摘要 / 无工具短调用）
+        </label>
+        <label class="row" style="flex-direction:row;align-items:center;color:var(--fg)">
+          <input id="setDebug" type="checkbox"> 开启调试日志
+        </label>
+        <label>全局提示词目录 (promptsDir)
+          <input id="setPromptsDir" type="text">
+        </label>
+        <label>额外扫描的项目指令文件名（逗号分隔，默认含 AGENTS.md）
+          <input id="setExtraFiles" type="text" placeholder="CLAUDE.md">
+        </label>
+        <div class="row">
+          <button id="saveSettingsBtn" class="primary">保存设置</button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <div id="toast" class="toast"></div>
+
+  <script>
+    const CAPABILITY = __PROMPT_MATCH_CAPABILITY__;
+    const HEADERS = {
+      Accept: "application/json",
+      "x-prompt-match-capability": CAPABILITY,
+    };
+
+    function applyMagpieTheme(theme) {
+      if (!theme || typeof theme !== "object") return;
+      const isDark =
+        typeof theme.dark === "boolean"
+          ? theme.dark
+          : !(theme.mode === "light" || theme.appearance === "light");
+      document.documentElement.style.colorScheme = isDark ? "dark" : "light";
+      document.body.classList.toggle("light", !isDark);
+      const tokens = theme.tokens;
+      if (tokens && typeof tokens === "object") {
+        for (const [k, v] of Object.entries(tokens)) {
+          if (/^[a-zA-Z0-9-]+$/.test(k) && typeof v === "string") {
+            document.documentElement.style.setProperty("--magpie-" + k, v);
+          }
+        }
+      }
+    }
+
+    try {
+      const params = new URLSearchParams(location.hash.slice(1));
+      const themeRaw = params.get("theme");
+      if (themeRaw) applyMagpieTheme(JSON.parse(themeRaw));
+    } catch {}
+
+    window.addEventListener("message", (event) => {
+      if (event.source !== parent || !event.data || event.data.magpie !== 1) return;
+      if (event.data.event === "theme") applyMagpieTheme(event.data.data);
+      else if (event.data.id === "prompt-match-theme" && event.data.result) {
+        applyMagpieTheme(event.data.result);
+      }
+    });
+    if (parent !== window) {
+      try {
+        parent.postMessage({ magpie: 1, id: "prompt-match-theme", method: "hello" }, "*");
+      } catch {}
+    }
+
+    function showError(msg) {
+      const el = document.getElementById("errorBanner");
+      if (!el) return;
+      if (!msg) {
+        el.style.display = "none";
+        el.textContent = "";
+      } else {
+        el.style.display = "block";
+        el.textContent = msg;
+      }
+    }
+
+    function toast(msg) {
+      const el = document.getElementById("toast");
+      el.textContent = msg;
+      el.style.display = "block";
+      clearTimeout(toast._t);
+      toast._t = setTimeout(() => { el.style.display = "none"; }, 2600);
+    }
+
+    // Relative URLs preserve Magpie's proxied service path (e.g. /plugin-service/<token>/)
+    function apiUrl(relPath) {
+      const cleanPath = String(relPath || "").replace(/^\/+/, "");
+      let base = location.href.split("#")[0].split("?")[0];
+      if (base.endsWith("/index.html")) {
+        base = base.slice(0, -"index.html".length);
+      } else if (!base.endsWith("/")) {
+        base = base + "/";
+      }
+      return new URL(cleanPath, base).href;
+    }
+
+    async function api(path, opts = {}) {
+      const hasBody = opts.body !== undefined;
+      const res = await fetch(apiUrl(path), {
+        credentials: "omit",
+        ...opts,
+        headers: {
+          ...HEADERS,
+          ...(hasBody ? { "content-type": "application/json" } : {}),
+          ...(opts.headers || {}),
+        },
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+      return data;
+    }
+
+    let state = {
+      globalFiles: [],
+      selectedFile: "",
+      catalogModels: [],
+      selectedCatalogIds: new Set(),
+    };
+
+    function getSelectedModelPatterns() {
+      const bindProvider = document.getElementById("bindProviderPrefix").checked;
+      const out = [];
+      const seen = new Set();
+      for (const m of state.catalogModels) {
+        if (!state.selectedCatalogIds.has(m.id)) continue;
+        const pat = m.isGroup || bindProvider ? m.id : m.model;
+        if (!seen.has(pat)) {
+          seen.add(pat);
+          out.push(pat);
+        }
+      }
+      return out;
+    }
+
+    function updateSelectedButtons() {
+      const patterns = getSelectedModelPatterns();
+      const createBtn = document.getElementById("createForSelectedBtn");
+      const appendBtn = document.getElementById("appendSelectedBtn");
+      createBtn.textContent = `为所选模型新建规则 (${patterns.length})`;
+      createBtn.disabled = patterns.length === 0;
+      appendBtn.disabled = patterns.length === 0;
+    }
+
+    function renderModelChips() {
+      const providerFilter = document.getElementById("modelProviderFilter").value;
+      const query = document.getElementById("modelSearchInput").value.trim().toLowerCase();
+      const grid = document.getElementById("modelChipGrid");
+
+      const filtered = state.catalogModels.filter((m) => {
+        if (providerFilter === "__groups__") {
+          if (!m.isGroup) return false;
+        } else if (providerFilter && m.provider !== providerFilter) {
+          return false;
+        }
+        if (query) {
+          const hay = `${m.id} ${m.label || ""}`.toLowerCase();
+          if (!hay.includes(query)) return false;
+        }
+        return true;
+      });
+
+      grid.innerHTML = "";
+      if (filtered.length === 0) {
+        grid.innerHTML = '<span class="muted">未找到匹配的 Magpie 模型（也可直接点下方「+ 新建」手动输入模型名或通配符）。</span>';
+        updateSelectedButtons();
+        return;
+      }
+
+      filtered.forEach((m) => {
+        const chip = document.createElement("button");
+        chip.type = "button";
+        const isSel = state.selectedCatalogIds.has(m.id);
+        chip.className = "model-chip" + (isSel ? " selected" : "");
+        const matched = m.matchedRules || [];
+        chip.title = matched.length
+          ? `${m.id}\n已命中全局规则: ${matched.join(", ")}`
+          : `${m.id}\n暂未命中全局规则`;
+        chip.innerHTML =
+          (matched.length ? '<span class="dot"></span>' : "") +
+          `<span class="prov">${escapeHtml(m.provider)}/</span><span>${escapeHtml(m.model)}</span>`;
+        chip.onclick = () => {
+          if (state.selectedCatalogIds.has(m.id)) {
+            state.selectedCatalogIds.delete(m.id);
+          } else {
+            state.selectedCatalogIds.add(m.id);
+          }
+          renderModelChips();
+        };
+        grid.appendChild(chip);
+      });
+
+      updateSelectedButtons();
+    }
+
+    async function loadModelCatalog(forceRefresh = false) {
+      const qs = forceRefresh ? "?refresh=1" : "";
+      const data = await api("/api/models" + qs);
+      state.catalogModels = data.models || [];
+
+      const summary = document.getElementById("catalogSummary");
+      const covered = state.catalogModels.filter((m) => (m.matchedRules || []).length > 0).length;
+      summary.textContent = state.catalogModels.length
+        ? ` — 已发现 ${state.catalogModels.length} 个模型（${covered} 个已配置规则）`
+        : " — 未发现已配置模型（可在 Magpie 添加 Provider 后点击刷新）";
+
+      const provSelect = document.getElementById("modelProviderFilter");
+      const prevProv = provSelect.value;
+      provSelect.innerHTML = '<option value="">全部供应商</option>';
+      (data.providers || []).forEach((p) => {
+        const opt = document.createElement("option");
+        opt.value = p;
+        opt.textContent = p;
+        provSelect.appendChild(opt);
+      });
+      if ((data.groups || []).length > 0) {
+        const opt = document.createElement("option");
+        opt.value = "__groups__";
+        opt.textContent = "路由组 (group/*)";
+        provSelect.appendChild(opt);
+      }
+      provSelect.value = prevProv;
+
+      const testSelect = document.getElementById("testCatalogSelect");
+      testSelect.innerHTML = '<option value="">从 Magpie 模型列表快速填入…</option>';
+      state.catalogModels.forEach((m) => {
+        const opt = document.createElement("option");
+        opt.value = m.id;
+        opt.textContent = m.label ? `${m.id} (${m.label})` : m.id;
+        testSelect.appendChild(opt);
+      });
+
+      renderModelChips();
+    }
+
+    function suggestRuleFileName(patterns) {
+      const first = (patterns[0] || "custom-model").replace(/^.*\//, "").replace(/[^A-Za-z0-9._-]+/g, "-");
+      const base = first.replace(/^-+|-+$/g, "") || "custom-model";
+      return `${base}.md`;
+    }
+
+    document.getElementById("refreshModelsBtn").onclick = async () => {
+      await loadModelCatalog(true);
+      toast("已刷新 Magpie 模型列表");
+    };
+    document.getElementById("modelProviderFilter").onchange = renderModelChips;
+    document.getElementById("modelSearchInput").oninput = renderModelChips;
+    document.getElementById("bindProviderPrefix").onchange = updateSelectedButtons;
+
+    document.getElementById("createForSelectedBtn").onclick = () => {
+      const patterns = getSelectedModelPatterns();
+      if (patterns.length === 0) return;
+      state.selectedFile = "";
+      document.getElementById("editorFileName").value = suggestRuleFileName(patterns);
+      const modelLines = patterns.map((p) => `  - "${p}"`).join("\n");
+      document.getElementById("editorContent").value =
+        `---\nmodels:\n${modelLines}\nagents: ["*"]\nmode: append\nposition: system-end\npriority: 0\nenabled: true\n---\n\n在此输入适用于 ${patterns.join(", ")} 的专属提示词...\n`;
+      document.getElementById("editorContent").focus();
+      toast(`已生成规则草稿 (${patterns.length} 个模型)，编辑后点击保存即可热生效`);
+    };
+
+    document.getElementById("appendSelectedBtn").onclick = () => {
+      const patterns = getSelectedModelPatterns();
+      if (patterns.length === 0) return;
+      const editor = document.getElementById("editorContent");
+      const raw = editor.value || "";
+      const newLines = patterns.map((p) => `  - "${p}"`).join("\n");
+      if (raw.startsWith("---\n")) {
+        const endIdx = raw.indexOf("\n---", 3);
+        if (endIdx !== -1) {
+          const header = raw.slice(0, endIdx);
+          const rest = raw.slice(endIdx);
+          if (/^models\s*:/m.test(header)) {
+            const updatedHeader = header.replace(/^(models\s*:[^\n]*)/m, (line) => {
+              if (line.trim() === "models:") return `${line}\n${newLines}`;
+              const inline = line.slice(line.indexOf(":") + 1).trim();
+              return `models:\n  - ${inline.replace(/^\[|\]$/g, "").trim()}\n${newLines}`;
+            });
+            editor.value = updatedHeader + rest;
+          } else {
+            editor.value = `${header}\nmodels:\n${newLines}${rest}`;
+          }
+          toast(`已将 ${patterns.length} 个模型追加到当前规则 Frontmatter`);
+          return;
+        }
+      }
+      editor.value = `---\nmodels:\n${newLines}\n---\n\n${raw}`;
+      toast(`已为当前规则添加 Frontmatter (${patterns.length} 个模型)`);
+    };
+
+    document.getElementById("testCatalogSelect").onchange = (e) => {
+      const val = e.target.value;
+      if (!val) return;
+      const found = state.catalogModels.find((m) => m.id === val);
+      if (!found) return;
+      if (found.isGroup) {
+        document.getElementById("testReqModel").value = found.id;
+      } else {
+        document.getElementById("testProvider").value = found.provider;
+        document.getElementById("testModel").value = found.model;
+      }
+      toast("已填入测试模型: " + found.id);
+    };
+
+    document.querySelectorAll(".tab-btn").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        document.querySelectorAll(".tab-btn").forEach((b) => b.classList.remove("active"));
+        document.querySelectorAll(".panel").forEach((p) => p.classList.remove("active"));
+        btn.classList.add("active");
+        document.getElementById("tab-" + btn.dataset.tab).classList.add("active");
+        if (btn.dataset.tab === "logs") loadLogs();
+      });
+    });
+
+    async function loadStatus() {
+      const data = await api("/api/status");
+      const opts = data.options;
+      const badge = document.getElementById("statusBadge");
+      badge.textContent = opts.enabled ? "Enabled" : "Disabled";
+      badge.className = "pill " + (opts.enabled ? "ok" : "warn");
+      document.getElementById("promptsDirBadge").textContent = opts.promptsDir;
+
+      document.getElementById("setEnabled").checked = !!opts.enabled;
+      document.getElementById("setSkipUtility").checked = !!opts.skipUtilityRequests;
+      document.getElementById("setDebug").checked = !!opts.debug;
+      document.getElementById("setPromptsDir").value = opts.promptsDir || "";
+      document.getElementById("setExtraFiles").value = (opts.extraInstructionFiles || []).join(", ");
+
+      if (data.recentCwds && data.recentCwds.length > 0) {
+        const cwdEl = document.getElementById("projectCwdInput");
+        const testCwdEl = document.getElementById("testCwd");
+        if (!cwdEl.value) cwdEl.value = data.recentCwds[0];
+        if (!testCwdEl.value) testCwdEl.value = data.recentCwds[0];
+      }
+
+      const tplWrap = document.getElementById("templateButtons");
+      tplWrap.innerHTML = "";
+      (data.templates || []).forEach((t) => {
+        const btn = document.createElement("button");
+        btn.className = "sm";
+        btn.textContent = "+ " + t.title;
+        btn.title = t.description;
+        btn.onclick = async () => {
+          await api("/api/templates/" + encodeURIComponent(t.id), { method: "POST" });
+          toast("已生成模板: " + t.fileName);
+          await loadRules(t.fileName);
+          await loadModelCatalog(false);
+        };
+        tplWrap.appendChild(btn);
+      });
+    }
+
+    async function loadRules(selectName) {
+      const cwd = document.getElementById("projectCwdInput").value.trim();
+      const qs = cwd ? "?cwd=" + encodeURIComponent(cwd) : "";
+      const data = await api("/api/rules" + qs);
+      state.globalFiles = data.globalFiles || [];
+
+      const listEl = document.getElementById("globalRuleList");
+      listEl.innerHTML = "";
+      if (state.globalFiles.length === 0) {
+        listEl.innerHTML = '<div class="muted">目录为空，可点击上方快捷模板或「新建」创建规则。</div>';
+      } else {
+        state.globalFiles.forEach((f) => {
+          const btn = document.createElement("button");
+          btn.className = "file-item" + (f.fileName === (selectName || state.selectedFile) ? " selected" : "");
+          const models = (f.meta && f.meta.models && f.meta.models.length) ? f.meta.models.join(", ") : "(文件名推断)";
+          btn.innerHTML = `<div><strong>${escapeHtml(f.fileName)}</strong></div><div class="sub">${escapeHtml(models)}</div>`;
+          btn.onclick = () => selectRuleFile(f.fileName);
+          listEl.appendChild(btn);
+        });
+      }
+
+      const targetName = selectName || state.selectedFile || (state.globalFiles[0] && state.globalFiles[0].fileName);
+      if (targetName) selectRuleFile(targetName);
+
+      const projEl = document.getElementById("projectRuleList");
+      const projRules = data.projectRules || [];
+      if (projRules.length === 0) {
+        projEl.textContent = cwd ? "该目录下未发现项目级规则。" : "输入项目路径以扫描 AGENTS.md 条件块与同级文件。";
+      } else {
+        projEl.innerHTML = projRules
+          .map((r) => `<div style="margin-bottom:4px">• <strong>${escapeHtml(r.name)}</strong> <span class="pill">${escapeHtml(r.scope)}</span></div>`)
+          .join("");
+      }
+    }
+
+    function selectRuleFile(fileName) {
+      state.selectedFile = fileName;
+      const found = state.globalFiles.find((f) => f.fileName === fileName);
+      document.getElementById("editorFileName").value = fileName;
+      document.getElementById("editorContent").value = found ? found.raw : "";
+      document.querySelectorAll("#globalRuleList .file-item").forEach((el) => {
+        el.classList.toggle("selected", el.querySelector("strong")?.textContent === fileName);
+      });
+    }
+
+    document.getElementById("newRuleBtn").onclick = () => {
+      state.selectedFile = "";
+      document.getElementById("editorFileName").value = "gpt-6.2.md";
+      document.getElementById("editorContent").value =
+        '---\nmodels:\n  - "gpt-6.2"\nagents: ["*"]\nmode: append\nposition: system-end\nenabled: true\n---\n\n';
+    };
+
+    document.getElementById("saveRuleBtn").onclick = async () => {
+      const fileName = document.getElementById("editorFileName").value.trim();
+      const content = document.getElementById("editorContent").value;
+      if (!fileName) return toast("请输入文件名");
+      const res = await api("/api/rules", { method: "POST", body: JSON.stringify({ fileName, content }) });
+      toast("已保存并热生效: " + res.fileName);
+      await loadRules(res.fileName);
+      await loadModelCatalog(false);
+    };
+
+    document.getElementById("deleteRuleBtn").onclick = async () => {
+      const fileName = document.getElementById("editorFileName").value.trim();
+      if (!fileName) return;
+      await api("/api/rules/" + encodeURIComponent(fileName), { method: "DELETE" });
+      toast("已删除: " + fileName);
+      state.selectedFile = "";
+      document.getElementById("editorContent").value = "";
+      await loadRules();
+      await loadModelCatalog(false);
+    };
+
+    document.getElementById("scanProjectBtn").onclick = () => loadRules();
+
+    document.getElementById("fillSampleBtn").onclick = () => {
+      document.getElementById("testSample").value =
+        "通用项目规则：遵循严格 TypeScript 类型检查。\n\n" +
+        "<!-- @model: gpt-6.2 -->\n不要写冗余的防御性 try/catch 和重复判空。\n<!-- @end -->\n\n" +
+        "<!-- @model: claude-* -->\n优先直接修改代码文件。\n<!-- @end -->";
+    };
+
+    document.getElementById("runTestBtn").onclick = async () => {
+      const res = await api("/api/test", {
+        method: "POST",
+        body: JSON.stringify({
+          provider: document.getElementById("testProvider").value.trim(),
+          model: document.getElementById("testModel").value.trim(),
+          requestedModel: document.getElementById("testReqModel").value.trim(),
+          agent: document.getElementById("testAgent").value.trim(),
+          protocol: document.getElementById("testProtocol").value,
+          cwd: document.getElementById("testCwd").value.trim(),
+          sampleSystemPrompt: document.getElementById("testSample").value,
+        }),
+      });
+
+      document.getElementById("testResultCard").style.display = "flex";
+      document.getElementById("testSummaryPills").innerHTML = [
+        `<span class="pill ok">命中规则: ${res.matchedRules.length}</span>`,
+        `<span class="pill">剥离块: ${res.strippedInlineBlocks}</span>`,
+        `<span class="pill">原位保留块: ${res.unwrappedInlineBlocks}</span>`,
+        `<span class="pill">预估 +${res.estimatedTokens} tokens</span>`,
+      ].join("");
+
+      const matchedEl = document.getElementById("testMatchedList");
+      matchedEl.innerHTML = res.matchedRules.length
+        ? res.matchedRules
+            .map(
+              (r) =>
+                `<div class="row" style="margin-bottom:4px"><strong>${escapeHtml(r.name)}</strong><span class="pill">${escapeHtml(r.scope)}</span><span class="pill">${escapeHtml(r.mode)}</span><span class="pill">${escapeHtml(r.position)}</span></div>`
+            )
+            .join("")
+        : '<div class="muted">无额外注入规则命中。</div>';
+
+      const parts = [];
+      for (const pos of ["system-start", "system-end", "developer-reminder"]) {
+        if (res.previews[pos]) {
+          parts.push(`=== [${pos}] ===\n${res.previews[pos]}`);
+        }
+      }
+      document.getElementById("testInjectedPreview").textContent =
+        parts.join("\n\n") || "(无注入文本)";
+
+      const rewriteWrap = document.getElementById("testRewrittenWrap");
+      if (document.getElementById("testSample").value.trim()) {
+        rewriteWrap.style.display = "block";
+        document.getElementById("testRewrittenPreview").textContent = res.rewrittenSampleSystem;
+      } else {
+        rewriteWrap.style.display = "none";
+      }
+    };
+
+    async function loadLogs() {
+      const data = await api("/api/logs");
+      const tbody = document.getElementById("logsTableBody");
+      const entries = data.entries || [];
+      if (entries.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" class="muted">暂无命中记录</td></tr>';
+        return;
+      }
+      tbody.innerHTML = entries
+        .map((e) => {
+          const t = (e.timestamp || "").slice(11, 19);
+          const modelStr =
+            e.requestedModel === e.resolvedModel
+              ? e.resolvedModel
+              : `${e.requestedModel} → ${e.resolvedModel}`;
+          return `<tr>
+            <td>${escapeHtml(t)}</td>
+            <td>${escapeHtml(e.agent || "-")}</td>
+            <td><code>${escapeHtml(modelStr || "-")}</code></td>
+            <td><span class="pill ${e.status === "matched" ? "ok" : ""}">${escapeHtml(e.status)}</span></td>
+            <td>${escapeHtml((e.matchedRuleNames || []).join(", ") || "-")}</td>
+            <td>${e.injectedBytes || 0} B</td>
+          </tr>`;
+        })
+        .join("");
+    }
+
+    document.getElementById("refreshLogsBtn").onclick = loadLogs;
+    document.getElementById("clearLogsBtn").onclick = async () => {
+      await api("/api/logs", { method: "DELETE" });
+      await loadLogs();
+      toast("日志已清空");
+    };
+
+    document.getElementById("saveSettingsBtn").onclick = async () => {
+      const extraFiles = document
+        .getElementById("setExtraFiles")
+        .value.split(",")
+        .map((s) => s.trim())
+        .filter(Boolean);
+      await api("/api/settings", {
+        method: "PUT",
+        body: JSON.stringify({
+          enabled: document.getElementById("setEnabled").checked,
+          skipUtilityRequests: document.getElementById("setSkipUtility").checked,
+          debug: document.getElementById("setDebug").checked,
+          promptsDir: document.getElementById("setPromptsDir").value.trim(),
+          extraInstructionFiles: extraFiles,
+        }),
+      });
+      toast("设置已保存");
+      await loadStatus();
+      await loadRules();
+    };
+
+    function escapeHtml(s) {
+      return String(s ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;");
+    }
+
+    (async function init() {
+      showError("");
+      const tasks = await Promise.allSettled([
+        loadStatus(),
+        loadRules(),
+        loadModelCatalog(false),
+      ]);
+      const errors = tasks
+        .filter((t) => t.status === "rejected")
+        .map((t) => t.reason?.message || String(t.reason));
+      if (errors.length > 0) {
+        showError("部分数据加载失败: " + errors.join(" | "));
+      }
+    })();
+  </script>
+</body>
+</html>
